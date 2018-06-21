@@ -1,20 +1,38 @@
 package com.example.android.inventoryappstage1;
 
+import android.app.Activity;
+import android.app.LoaderManager;
+import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.provider.BaseColumns;
+import android.net.Uri;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import com.example.android.inventoryappstage1.data.ClothesContract.ClothesEntry;
 
-import com.example.android.inventoryappstage1.data.HeadphonesContract.HeadphonesEntry;
-import com.example.android.inventoryappstage1.data.ProductDbHelper;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements android.support.v4.app.LoaderManager.LoaderCallbacks<Cursor> {
 
-    private ProductDbHelper mDbHelper;
+    /**
+     * Identifier for the clothes data loader
+     */
+    private static final int CLOTHES_LOADER = 0;
+
+    /**
+     * Adapter for the ListView
+     */
+    ClothesCursorAdapter mCursorAdapter;
 
 
     @Override
@@ -22,94 +40,137 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mDbHelper = new ProductDbHelper(this);
-        insertProduct();
-        displayDatabaseInfo();
+
+        //Setup FAB to open EditorActivity
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, EditorActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        //Find the ListView which will be populated with the clothes data
+        ListView clothesListView = (ListView) findViewById(R.id.list_view_clothes);
+
+
+        //Find an set empty view on the ListView, so that it only shows when the list has 0 items.
+        View emptyView = findViewById(R.id.empty_view);
+        clothesListView.setEmptyView(emptyView);
+
+        //sets the CursorAdapter on the Listview to create a list item for each row of the clothes data in the Cursor
+        //There is no clothes data yet(until the loader finishes) so pass in null for the Cursor.
+        mCursorAdapter = new ClothesCursorAdapter(this, null);
+        clothesListView.setAdapter(mCursorAdapter);
+
+
+        clothesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                //Create new Intent to go to {@link EditorActivity}
+                Intent intent = new Intent(MainActivity.this, EditorActivity.class);
+
+                //Form the content URI that represents the specific clothes that was clicked on,
+                //by appending the "id" (passes as input to this method) onto the
+                //{@link ClothesEntry#CONTENT_URI}.
+                // For example, the URI would bee "content://com.example.android.inventoryappstage1/clothes/2"
+                // if the clothes with ID 2 was clicked on.
+                Uri currentClothesUri = ContentUris.withAppendedId(ClothesEntry.CONTENT_URI, id);
+
+                intent.setData(currentClothesUri);
+
+                startActivity(intent);
+
+            }
+        });
+
+        getLoaderManager().initLoader(CLOTHES_LOADER,null, this);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu options from the res/menu/menu_catalog.xml file.
+        // This adds menu items to the app bar.
+        getMenuInflater().inflate(R.menu.menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // User clicked on a menu option in the app bar overflow menu
+        switch (item.getItemId()) {
+            // Respond to a click on the "Insert dummy data" menu option
+            case R.id.action_insert_dummy_data:
+                insertProduct();
+                return true;
+            // Respond to a click on the "Delete all entries" menu option
+            case R.id.action_delete_all_entries:
+                deleteAllClothes();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void insertProduct() {
 
-        try {
-
-            SQLiteDatabase db = mDbHelper.getWritableDatabase();
-
             ContentValues values = new ContentValues();
 
-            values.put(HeadphonesEntry.COLUMN_HEADPHONES_PRODUCT_NAME, "Ear buds");
-            values.put(HeadphonesEntry.COLUMN_HEADPHONES_PRICE, 258);
-            values.put(HeadphonesEntry.COLUMN_HEADPHONES_QUANTITY, 2);
-            values.put(HeadphonesEntry.COLUMN_HEADPHONES_SUPPLIER_NAME, "Rudolf");
-            values.put(HeadphonesEntry.COLUMN_HEADPHONES_SUPPLIER_PHONE_NUMBER, 03);
+            values.put(ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME, "Skirt");
+            values.put(ClothesEntry.COLUMN_CLOTHES_PRICE, 258);
+            values.put(ClothesEntry.COLUMN_CLOTHES_QUANTITY, 2);
+            values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME, "H & M");
+            values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER, 03745455343);
 
-            long newRowId = db.insert("headphones", null, values);
-
-
-        } catch (Exception e) {
+            Uri newUri = getContentResolver().insert(ClothesEntry.CONTENT_URI, values);
 
         }
-    }
 
-    private void displayDatabaseInfo() {
+    /**
+     * Helper method to delete all clothes in the database.
+     */
+     private void deleteAllClothes(){
+         int rowsDeleted = getContentResolver().delete(ClothesEntry.CONTENT_URI, null, null);
+         Log.v("MainActivity", rowsDeleted + " rows deleted from clothes database");
+}
 
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+
+
+    @Override
+    public android.support.v4.content.Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
 
         String[] projection = {
-                BaseColumns._ID,
-                HeadphonesEntry.COLUMN_HEADPHONES_PRODUCT_NAME,
-                HeadphonesEntry.COLUMN_HEADPHONES_PRICE,
-                HeadphonesEntry.COLUMN_HEADPHONES_QUANTITY,
-                HeadphonesEntry.COLUMN_HEADPHONES_SUPPLIER_NAME,
-                HeadphonesEntry.COLUMN_HEADPHONES_SUPPLIER_PHONE_NUMBER
-
+                ClothesEntry._ID,
+                ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME,
+                ClothesEntry.COLUMN_CLOTHES_PRICE,
+                ClothesEntry.COLUMN_CLOTHES_QUANTITY,
         };
 
-        Cursor cursor = db.query(
-                HeadphonesEntry.TABLE_NAME,
+        return  new android.support.v4.content.CursorLoader(this,
+                ClothesEntry.CONTENT_URI,
                 projection,
                 null,
                 null,
-                null,
-                null,
-                null
+                null);
 
 
-        );
-        try {
+    }
 
-            int idColumnIndex = cursor.getColumnIndex(HeadphonesEntry._ID);
-            int nameColumnIndex = cursor.getColumnIndex(HeadphonesEntry.COLUMN_HEADPHONES_PRODUCT_NAME);
-            int priceColumnIndex = cursor.getColumnIndex(HeadphonesEntry.COLUMN_HEADPHONES_PRICE);
-            int quantityColumnIndex = cursor.getColumnIndex(HeadphonesEntry.COLUMN_HEADPHONES_QUANTITY);
-            int supplierNameColumnIndex = cursor.getColumnIndex(HeadphonesEntry.COLUMN_HEADPHONES_SUPPLIER_NAME);
-            int supplierPhoneNumberColumnIndex = cursor.getColumnIndex(HeadphonesEntry.COLUMN_HEADPHONES_SUPPLIER_PHONE_NUMBER);
+    @Override
+    public void onLoadFinished(android.support.v4.content.Loader<Cursor> loader, Cursor data) {
 
+         mCursorAdapter.swapCursor(data);
 
-            // Iterate through all the returned rows in the cursor
-            while (cursor.moveToNext()) {
+    }
 
-                int currentID = cursor.getInt(idColumnIndex);
-                String currentName = cursor.getString(nameColumnIndex);
-                int currentPrice = cursor.getInt(priceColumnIndex);
-                int currentQuantity = cursor.getInt(quantityColumnIndex);
-                String currentSupplierName = cursor.getString(supplierNameColumnIndex);
-                int currentSupplierPhoneNumber = cursor.getInt(supplierPhoneNumberColumnIndex);
+    @Override
+    public void onLoaderReset(android.support.v4.content.Loader<Cursor> loader) {
+         mCursorAdapter.swapCursor(null);
 
-                Log.d("Product", "prodcut id " + currentID);
-                Log.d("Product", "prodcut name " + currentName);
-
-            }
-
-
-            // Use that index to extract the String or Int value of the word
-            // at the current row the cursor is on.
-
-
-        } finally {
-
-            // Always close the cursor when you're done reading from it. This releases all its
-            // resources and makes it invalid.
-            cursor.close();
-        }
     }
 }
+
+
+
 
