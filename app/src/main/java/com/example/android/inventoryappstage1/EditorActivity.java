@@ -18,7 +18,9 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
+
 import com.example.android.inventoryappstage1.data.ClothesContract.ClothesEntry;
 
 public class EditorActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -52,13 +54,13 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     /**
      * EditText field to enter the Supplier name
      */
-    private EditText mSupplierName;
+    private EditText mSupplierNameEditText;
 
     /**
      * EditText field to enter the supplier phone number
      */
 
-    private EditText mSupplierPhoneNumber;
+    private EditText mSupplierPhoneNumberEditText;
 
     /**
      * Boolean flag that keeps trach of whether the clothes has been edited (true) or not (false)
@@ -105,14 +107,315 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mClothesNameEditText = (EditText) findViewById(R.id.edit_product_name);
         mClothesPriceEditText = (EditText) findViewById(R.id.edit_price_field);
         mClothesQuantityEditText = (EditText) findViewById(R.id.edit_clothes_quantity);
-        mSupplierName = (EditText) findViewById(R.id.edit_supplier_name_text_field);
-        mSupplierPhoneNumber = (EditText) findViewById(R.id.edit_phone_text_field);
+        mSupplierNameEditText = (EditText) findViewById(R.id.edit_supplier_name_text_field);
+        mSupplierPhoneNumberEditText = (EditText) findViewById(R.id.edit_phone_text_field);
+
+        ImageButton mIncrease = (ImageButton) findViewById(R.id.edit_quantity_increase);
+        ImageButton mDecrease = (ImageButton) findViewById(R.id.edit_quantity_decrease);
+
 
         mClothesNameEditText.setOnTouchListener(mTouchListener);
         mClothesPriceEditText.setOnTouchListener(mTouchListener);
-        mClothesPriceEditText.setOnTouchListener(mTouchListener);
-        mSupplierName.setOnTouchListener(mTouchListener);
-        mSupplierPhoneNumber.setOnTouchListener(mTouchListener);
+        mClothesQuantityEditText.setOnTouchListener(mTouchListener);
+        mSupplierNameEditText.setOnTouchListener(mTouchListener);
+        mSupplierPhoneNumberEditText.setOnTouchListener(mTouchListener);
+        mIncrease.setOnTouchListener(mTouchListener);
+        mDecrease.setOnTouchListener(mTouchListener);
+
+        //increase quantity
+        mIncrease.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                String quantity = mClothesQuantityEditText.getText().toString();
+                if (TextUtils.isEmpty(quantity)) {
+                    Toast.makeText(EditorActivity.this, R.string.editor_quantity_field_cant_be_empty, Toast.LENGTH_SHORT).show();
+                    return;
+                } else {
+                    givenQuantity = Integer.parseInt(quantity);
+                    mClothesQuantityEditText.setText(String.valueOf(givenQuantity + 1));
+                }
+            }
+        });
+
+        //decrease quantity with button
+
+        mDecrease.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String quantity = mClothesQuantityEditText.getText().toString();
+                if (TextUtils.isEmpty(quantity)) {
+                    Toast.makeText(EditorActivity.this, R.string.editor_quantity_field_cant_be_empty, Toast.LENGTH_SHORT).show();
+                    return;
+                } else {
+                    givenQuantity = Integer.parseInt(quantity);
+                    // to validate if quantity is greater than =
+                    if ((givenQuantity - 1) >= 0) {
+                        mClothesQuantityEditText.setText(String.valueOf(givenQuantity - 1));
+                    } else {
+                        Toast.makeText(EditorActivity.this, R.string.editor_quantity_cant_be_less_then_0, Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        });
+
+        //setting up the phone button in the editor activity to call the supplier
+        final ImageButton mPhoneCallSupplierButton = (ImageButton) findViewById(R.id.call_supplier_phone_button);
+
+        mPhoneCallSupplierButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String phoneNumber = mSupplierPhoneNumberEditText.getText().toString().trim();
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                intent.setData(Uri.parse("tel:" + phoneNumber));
+                if (intent.resolveActivity(getPackageManager()) != null) {
+                    startActivity(intent);
+
+                }
+            }
+
+        });
+    }
+
+    @Override
+    public void onBackPressed() {
+        // If the clothes editing hasnt changed, continue with handling back button press
+        if (!mClothesHasChanged) {
+            super.onBackPressed();
+            return;
+        }
+        //Otherwise if there are unsaved changes, setup a dialog to warn the user.
+        // Create a click listener to handle the user confirming that changes should be discarded.
+        DialogInterface.OnClickListener discardButtonClickListener =
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        //User clicked "Discard" button, close the current activity-
+                        finish();
+
+                    }
+                };
+        //Show the dialog that there are unsaved changes
+        showUnsavedChangedDialog(discardButtonClickListener);
+    }
+
+    private void saveProductClothes() {
+
+        String productNameClothesString = mClothesNameEditText.getText().toString().trim();
+        String priceClothesString = mClothesPriceEditText.getText().toString().trim();
+        String quantityClothesString = mClothesQuantityEditText.getText().toString().trim();
+        String supplierNameString = mSupplierNameEditText.getText().toString().trim();
+        String supplierPhoneNumberString = mSupplierPhoneNumberEditText.getText().toString().trim();
+
+        //Check if this is supposed to be a new clothes product
+        // and check if all the fields in the editor are blank
+
+        if (mCurrentClothesUri == null &&
+                TextUtils.isEmpty(productNameClothesString) && TextUtils.isEmpty(priceClothesString) &&
+                TextUtils.isEmpty(quantityClothesString) && TextUtils.isEmpty(supplierNameString) &&
+                TextUtils.isEmpty(supplierPhoneNumberString))
+
+        {
+            Toast.makeText(this, getString(R.string.editor_fill_in), Toast.LENGTH_LONG).show();
+            //Since no fields were modified, we can return early without creating a new clothes product.
+            // No need to create ContentValues and no need to do any ContenProvider operations.
+            return;
+        }
+        if (TextUtils.isEmpty(productNameClothesString)) {
+            mClothesNameEditText.setError(getString(R.string.editor_question_for_empty_field_name));
+            return;
+        }
+        if (TextUtils.isEmpty(priceClothesString)) {
+            mClothesPriceEditText.setError(getString(R.string.editor_question_for_empty_field_price));
+            return;
+        }
+
+        if (TextUtils.isEmpty(quantityClothesString)) {
+            mClothesQuantityEditText.setError(getString(R.string.editor_quantity_field_cant_be_empty));
+            return;
+        }
+
+        if (TextUtils.isEmpty(supplierNameString)) {
+            mSupplierNameEditText.setError(getString(R.string.editor_question_for_empty_field_supplier_name));
+            return;
+        }
+        if (TextUtils.isEmpty(supplierPhoneNumberString)) {
+            mSupplierPhoneNumberEditText.setError(getString(R.string.editor_question_for_empty_field_supplier_phone_number));
+            return;
+        }
+
+        //Create a ContentValues object where colum name are the keys,
+        // and pet attributes from the editro are the values
+        ContentValues values = new ContentValues();
+        values.put(ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME, productNameClothesString);
+        values.put(ClothesEntry.COLUMN_CLOTHES_PRICE, priceClothesString);
+        values.put(ClothesEntry.COLUMN_CLOTHES_QUANTITY, quantityClothesString);
+        values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME, supplierNameString);
+        values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER, supplierPhoneNumberString);
+
+        //Determine if this a new or an existing product of clothes by checking if mCurrentClothesUri is null or not
+        if (mCurrentClothesUri == null) {
+            // this is a NEW product, so insert a new product into the provider,
+            // returning the content URI for the new clothes product-
+            Uri newUri = getContentResolver().insert(ClothesEntry.CONTENT_URI, values);
+
+            if (newUri == null) {
+                //If the new content URI is null, then there was an error with insertion.
+                Toast.makeText(this, getString(R.string.editor_insert_clothes_failed), Toast.LENGTH_SHORT).show();
+            } else {
+                //Otherwise, the insertion was succesful and we can display a toast.
+                Toast.makeText(this, getString(R.string.editor_insert_clothes_successful), Toast.LENGTH_SHORT).show();
+            }
+
+            finish();
+
+        } else {
+            //Otherwise this is an existing Clothes product, so update the clothes with content URI: mCurrentClothesUri
+            // and pass in the new ContentValues. Pass in null for the selection and selection args
+            // because mCurrentClothesUri will already identify the corret row in the database that
+            // we want to modify
+
+            int rowsAffected = getContentResolver().update(mCurrentClothesUri, values, null, null);
+
+            //Show a toast message depending on whether or not the update was succesful.
+            if (rowsAffected == 0) {
+                //If no rows were affected, then there was an error with the update.
+                Toast.makeText(this, getString(R.string.editor_insert_clothes_failed), Toast.LENGTH_SHORT).show();
+            } else {
+                //Otherwise the update was successful and we can display a toast.
+                Toast.makeText(this, getString(R.string.editor_insert_clothes_successful), Toast.LENGTH_SHORT).show();
+            }
+            finish();
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        //Inflate the menu options from the res/menu/menu_editor.xml file.
+        // this add menu items to the app bar
+        getMenuInflater().inflate(R.menu.editor_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+
+        if (mCurrentClothesUri == null) {
+            MenuItem menuItem = menu.findItem(R.id.action_delete);
+            menuItem.setVisible(false);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        // User clicked on a menu option in the app bar overflow menu
+        switch (item.getItemId()) {
+            case R.id.action_save:
+                saveProductClothes();
+
+                return true;
+
+            // Respond to a click on the "Delete" menu option
+            case R.id.action_delete:
+                showDeleteConfirmationDialog();
+                return true;
+
+            //Respond to a click on the "Up" arrow button in the app bar
+            case android.R.id.home:
+                //If the product clothes hasnt changed, continue with navigating up to parent activity
+                // which is the {@link MainActivity}.
+                if (!mClothesHasChanged) {
+                    NavUtils.navigateUpFromSameTask(EditorActivity.this);
+                    return true;
+                }
+
+                //Otherwise if there are unsaved changes, setuo a dialog to warn the user.
+                //Create a clikc listener to handle the user confirming that
+                // chnages should be discarded.
+                DialogInterface.OnClickListener discardButtonClickListener =
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                //User clicked "Disacard" button, navigate to parent activity-
+                                NavUtils.navigateUpFromSameTask(EditorActivity.this);
+                            }
+
+                        };
+                //Show a dialog that notifies the user they have unsaved changes
+                showUnsavedChangedDialog(discardButtonClickListener);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        //since the ditor show all the clothes attributes, define a projection that contains
+        // all columns from the clothes table
+        String[] projection = {
+                ClothesEntry._ID,
+                ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME,
+                ClothesEntry.COLUMN_CLOTHES_PRICE,
+                ClothesEntry.COLUMN_CLOTHES_QUANTITY,
+                ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME,
+                ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER
+        };
+
+        return new CursorLoader(this,
+                mCurrentClothesUri,
+                projection,
+                null,
+                null,
+                null);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+
+        //Bail early if the cursor is null or there is less that 1 row in the cursor
+        if (cursor == null || cursor.getCount() < 1) {
+            return;
+        }
+
+        //Proceed with moving to the first row of the cursor and reading data from it
+        // This hsould be the only row in the cursor)
+        if (cursor.moveToFirst()) {
+            //Find the columns of clothes attributes that we ware interested in
+            int clothesNameColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME);
+            int priceColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_PRICE);
+            int quantityColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_QUANTITY);
+            int supplierNameColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME);
+            int supplierPhoneNumberColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER);
+
+            //Extract out the value from the Cursor for the given column index
+            String productName = cursor.getString(clothesNameColumnIndex);
+            int price = cursor.getInt(priceColumnIndex);
+            int quantity = cursor.getInt(quantityColumnIndex);
+            String supplierName = cursor.getString(supplierNameColumnIndex);
+            long supplierPhoneNumber = cursor.getLong(supplierPhoneNumberColumnIndex);
+
+            //Update the views on the screen with the values from the database
+            mClothesNameEditText.setText(productName);
+            mClothesPriceEditText.setText(Integer.toString(price));
+            mClothesQuantityEditText.setText(Integer.toString(quantity));
+            mSupplierNameEditText.setText(supplierName);
+            mSupplierPhoneNumberEditText.setText(Long.toString(supplierPhoneNumber));
+
+        }
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        //If the loader is invalidated, clear out all the data from the input fields.
+        mClothesNameEditText.setText("");
+        mClothesPriceEditText.setText("");
+        mClothesQuantityEditText.setText("");
+        mSupplierNameEditText.setText("");
+        mSupplierPhoneNumberEditText.setText("");
 
     }
 
@@ -160,12 +463,14 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
-                if (dialog != null){
+                if (dialog != null) {
                     dialog.dismiss();
                 }
 
             }
         });
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
     }
 
     private void showUnsavedChangedDialog(
@@ -193,223 +498,4 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         alertDialog.show();
     }
 
-    @Override
-    public void onBackPressed() {
-        // If the clothes editing hasnt changed, continue with handling back button press
-        if (mClothesHasChanged) {
-            super.onBackPressed();
-            return;
-        }
-        //Otherwise if there are unsaved changes, setup a dialog to warn the user.
-        // Create a click listener to handle the user confirming that changes should be discarded.
-        DialogInterface.OnClickListener discardButtonClickListener =
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        //User clicked "Discard" button, close the current activity-
-                        finish();
-
-                    }
-                };
-        //Show the dialog that there are unsaved changes
-        showUnsavedChangedDialog(discardButtonClickListener);
-    }
-
-    private void saveProductClothes() {
-
-        String productNameClothesString = mClothesNameEditText.getText().toString().trim();
-        String priceClothesString = mClothesPriceEditText.getText().toString().trim();
-        String quantityClothesString = mClothesQuantityEditText.getText().toString().trim();
-        String supplierNameString = mSupplierName.getText().toString().trim();
-        String supplierPhoneNumberString = mSupplierPhoneNumber.getText().toString().trim();
-
-        //Check if this is supposed to be a new clothes product
-        // and check if all the fields in the editor are blank
-
-        if (mCurrentClothesUri == null &&
-                TextUtils.isEmpty(productNameClothesString) && TextUtils.isEmpty(priceClothesString) &&
-                TextUtils.isEmpty(quantityClothesString) && TextUtils.isEmpty(supplierNameString) &&
-                TextUtils.isEmpty(supplierPhoneNumberString))
-
-        {
-            Toast.makeText(this, getString(R.string.editor_fill_in), Toast.LENGTH_SHORT).show();
-            //Since no fields were modified, we can return early without creating a new clothes product.
-            // No need to create ContentValues and no need to do any ContenProvider operations.
-                return;
-            }
-
-            //Create a ContentValues object where colum name are the keys,
-            // and pet attributes from the editro are the values
-            ContentValues values = new ContentValues();
-            values.put(ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME, productNameClothesString);
-            values.put(ClothesEntry.COLUMN_CLOTHES_PRICE, priceClothesString);
-            values.put(ClothesEntry.COLUMN_CLOTHES_QUANTITY, quantityClothesString);
-            values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME, supplierNameString);
-            values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER, supplierPhoneNumberString);
-
-            //Determine if this a new or an existing product of clothes by checking if mCurrentClothesUri is null or not
-            if (mCurrentClothesUri == null) {
-                // this is a NEW product, so insert a new product into the provider,
-                // returning the content URI for the new clothes product-
-                Uri newUri = getContentResolver().insert(ClothesEntry.CONTENT_URI, values);
-
-                if (newUri == null) {
-                    //If the new content URI is null, then there was an error with insertion.
-                    Toast.makeText(this, getString(R.string.editor_insert_clothes_failed), Toast.LENGTH_SHORT).show();
-                } else {
-                    //Otherwise, the insertion was succesful and we can display a toast.
-                    Toast.makeText(this, getString(R.string.editor_insert_clothes_successful), Toast.LENGTH_SHORT).show();
-                }
-
-            } else {
-                //Otherise this is an existing Clothes product, so update the clothes with content URI: mCurrentClothesUri
-                // and pass in the new ContentValues. Pass in null for the selection and selection args
-                // because mCurrentClothesUri will already identify the corret row in the database that
-                // we want to modify
-
-                int rowsAffected = getContentResolver().update(mCurrentClothesUri, values, null, null);
-
-                //Show a toast message depending on whether or not the update was succesful.
-                if (rowsAffected == 0) {
-                    //If no rows were affected, then there was an error with the update.
-                    Toast.makeText(this, getString(R.string.editor_insert_clothes_failed), Toast.LENGTH_SHORT).show();
-                } else {
-                    //Otherwise the update was successful and we can display a toast.
-                    Toast.makeText(this, getString(R.string.editor_insert_clothes_successful), Toast.LENGTH_SHORT).show();
-                }
-
-            }
-        }
-
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        //Inflate the menu options from the res/menu/menu_editor.xml file.
-        // this add menu items to the app bar
-        getMenuInflater().inflate(R.menu.editor_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        super.onPrepareOptionsMenu(menu);
-
-        if (mCurrentClothesUri == null) {
-            MenuItem menuItem = menu.findItem(R.id.action_delete);
-            menuItem.setVisible(false);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        // User clicked on a menu option in the app bar overflow menu
-        switch (item.getItemId()) {
-            case R.id.action_save:
-                saveProductClothes();
-                finish();
-                return true;
-
-            // Respond to a click on the "Delete" menu option
-            case R.id.action_delete:
-                showDeleteConfirmationDialog();
-                return true;
-
-            //Respond to a click on the "Up" arrow button in the app bar
-            case android.R.id.home:
-                //If the product clothes hasnt changed, continue with navigating up to parent activity
-                // which is the {@link MainActivity}.
-                if (mClothesHasChanged) {
-                    NavUtils.navigateUpFromSameTask(EditorActivity.this);
-                    return true;
-                }
-
-                //Otherwise if there are unsaved changes, setuo a dialog to warn the user.
-                //Create a clikc listener to handle the user confirming that
-                // chnages should be discarded.
-                DialogInterface.OnClickListener discardButtonClickListener =
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                //User clicked "Disacard" button, navigate to parent activity-
-                                NavUtils.navigateUpFromSameTask(EditorActivity.this);
-                            }
-
-                        };
-                //Show a dialog that notifies the user they have unsaved changes
-                showUnsavedChangedDialog(discardButtonClickListener);
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        //since the ditor show all the clothes attributes, define a projection that contains
-        // all columns from the clothes table
-        String[] projection = {
-                ClothesEntry._ID,
-                ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME,
-                ClothesEntry.COLUMN_CLOTHES_PRICE,
-                ClothesEntry.COLUMN_CLOTHES_QUANTITY,
-                ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME,
-                ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER
-        };
-
-        return  new CursorLoader(this,
-                mCurrentClothesUri,
-                projection,
-                null,
-                null,
-                null);
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
-
-        //Bail early if the cursor is null or there is less that 1 row in the cursor
-        if (cursor == null || cursor.getCount() <1){
-            return;
-        }
-
-        //Proceed with moving to the first row of the cursor and reading data from it
-        // This hsould be the only row in the cursor)
-        if (cursor.moveToFirst()){
-            //Find the columns of clothes attributes that we ware interested in
-            int clothesNameColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME);
-            int priceColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_PRICE);
-            int quantityColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_QUANTITY);
-            int supplierNameColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME);
-            int supplierPhoneNumberColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER);
-
-            //Extract out the value from the Cursor for the given column index
-            String productName = cursor.getString(clothesNameColumnIndex);
-            int price = cursor.getInt(priceColumnIndex);
-            int quantity = cursor.getInt(quantityColumnIndex);
-            String supplierName = cursor.getString(supplierNameColumnIndex);
-            long supplierPhoneNumber = cursor.getLong(supplierPhoneNumberColumnIndex);
-
-            //Update the views on the screen with the values from the database
-            mClothesNameEditText.setText(productName);
-            mClothesPriceEditText.setText(Integer.toString(price));
-            mClothesQuantityEditText.setText(Integer.toString(quantity));
-            mSupplierName.setText(supplierName);
-            mSupplierPhoneNumber.setText(Long.toString(supplierPhoneNumber));
-
-        }
-
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
-        //If the loader is invalidated, clear out all the data from the input fields.
-        mClothesNameEditText.setText("");
-        mClothesPriceEditText.setText("");
-        mClothesQuantityEditText.setText("");
-        mSupplierName.setText("");
-        mSupplierPhoneNumber.setText("");
-
-    }
 }

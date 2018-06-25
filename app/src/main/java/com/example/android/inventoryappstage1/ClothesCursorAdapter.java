@@ -12,6 +12,7 @@ import android.widget.CursorAdapter;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.example.android.inventoryappstage1.data.ClothesContract.ClothesEntry;
 
 public class ClothesCursorAdapter extends CursorAdapter {
@@ -34,12 +35,10 @@ public class ClothesCursorAdapter extends CursorAdapter {
         TextView quantityClothesTextView = (TextView) view.findViewById(R.id.quantity);
         ImageButton sellButton = (ImageButton) view.findViewById(R.id.sell_button);
 
-
         //Find the columns of clothes attributes that we are in interested in
         int nameColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME);
         int priceColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_PRICE);
         int quantityColumnIndex = cursor.getColumnIndex(ClothesEntry.COLUMN_CLOTHES_QUANTITY);
-
 
         //Read the clothes attributes from the Cursor for the current clothes
         String clothesName = "Name of Clothes: " + cursor.getString(nameColumnIndex);
@@ -51,13 +50,11 @@ public class ClothesCursorAdapter extends CursorAdapter {
         priceClothesTextView.setText(price);
         quantityClothesTextView.setText(quantity);
 
-
         //Get the current quantity and make into an integer
         String currentQuantityString = cursor.getString(quantityColumnIndex);
         final int currentQuantity = Integer.valueOf(currentQuantityString);
         // Get the rows from the table with the ID
         final int productId = cursor.getInt(cursor.getColumnIndex(ClothesEntry._ID));
-
 
         //setting up the decrement on the sell button
         sellButton.setOnClickListener(new View.OnClickListener() {
@@ -84,6 +81,5 @@ public class ClothesCursorAdapter extends CursorAdapter {
         });
 
     }
-
 
 }

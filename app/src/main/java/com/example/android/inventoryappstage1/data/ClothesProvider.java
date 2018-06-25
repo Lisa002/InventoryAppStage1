@@ -8,7 +8,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.example.android.inventoryappstage1.data.ClothesContract.ClothesEntry;
@@ -35,20 +34,16 @@ public class ClothesProvider extends ContentProvider {
 
     private ProductDbHelper mDbHelper;
 
-
     /**
      * Initialize the provider and the database helper object.
      */
 
     public boolean onCreate() {
 
-
         // Creates a new database object.
-
         mDbHelper = new ProductDbHelper(getContext());
         return true;
     }
-
 
     /**
      * Perform the query for the given URI. Use the given projection, selection, selection arguments, and sort order.
@@ -113,11 +108,9 @@ public class ClothesProvider extends ContentProvider {
                 return ClothesEntry.CONTENT_ITEM_TYPE;
             default:
                 throw new IllegalStateException("Unkown URI" + uri + " with match " + match);
-
         }
 
     }
-
 
     @Override
     public Uri insert(@NonNull Uri uri, ContentValues contentValues) {
@@ -176,7 +169,6 @@ public class ClothesProvider extends ContentProvider {
 
     /**
      * Delete the data at the given slection and selection arguments.
-     *
      */
 
     @Override
@@ -211,7 +203,6 @@ public class ClothesProvider extends ContentProvider {
         }
         return rowsDeleted;
     }
-
 
     /**
      * Updates the data at the given params with the new Content Values
@@ -296,7 +287,8 @@ public class ClothesProvider extends ContentProvider {
 
         //If 1 or more rows were updated, then notify all listeners that the data at the
         // given URL has changed
-        if (rowsUpdated != 0) Objects.requireNonNull(getContext()).getContentResolver().notifyChange(uri, null);
+        if (rowsUpdated != 0)
+            Objects.requireNonNull(getContext()).getContentResolver().notifyChange(uri, null);
 
         // Return the number of rows updated
         return rowsUpdated;

@@ -54,7 +54,7 @@
             android:text="@string/quantity_text_view_info" />
 
         <ImageButton
-            android:id="@+id/edit_quantity_decrease"
+            android:id="@+id/edit_quantity_increase"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/plus_quantity_button_image"/>
@@ -66,7 +66,7 @@
             android:gravity="center_horizontal" />
 
         <ImageButton
-            android:id="@+id/edit_quantity_increase"
+            android:id="@+id/edit_quantity_decrease"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/minus_quantity_button_image"

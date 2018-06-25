@@ -91,4 +91,26 @@
 
     <!-- Toast when there is nothing filled in -->
     <string name="editor_fill_in">Pleas fill in the blank fields</string>
+
+    <!-- Toast when quantity edit text is left empty -->
+    <string name="editor_quantity_field_cant_be_empty">Pls select quantity</string>
+
+    <!-- Toast that quantity cant be less then 0-->
+    <string name="editor_quantity_cant_be_less_then_0">Quantity cant be less then 0</string>
+
+
+    <!-- question for when the name of the product is empty -->
+    <string name="editor_question_for_empty_field_name">What is the name of the clothes?</string>
+
+    <!-- question for the price of the product is empty -->
+    <string name="editor_question_for_empty_field_price">What is the price for the clothes?</string>
+
+    <!-- question for when the quantity for the product is empty -->
+    <string name="editor_question_for_empty_field_quantity">What is the quantity?</string>
+
+    <!-- question for when the supplier name field is empty -->
+    <string name="editor_question_for_empty_field_supplier_name">What is the name of the supplier?</string>
+
+    <!-- question for when the supplier phone number field is empty -->
+    <string name="editor_question_for_empty_field_supplier_phone_number">What is the phone number of the supplier?</string>
 </resources>

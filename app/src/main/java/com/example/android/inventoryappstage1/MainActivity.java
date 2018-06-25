@@ -1,12 +1,8 @@
 package com.example.android.inventoryappstage1;
 
-import android.app.Activity;
-import android.app.LoaderManager;
 import android.content.ContentUris;
 import android.content.ContentValues;
-import android.content.CursorLoader;
 import android.content.Intent;
-import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.support.design.widget.FloatingActionButton;
@@ -18,8 +14,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import com.example.android.inventoryappstage1.data.ClothesContract.ClothesEntry;
 
+import com.example.android.inventoryappstage1.data.ClothesContract.ClothesEntry;
 
 
 public class MainActivity extends AppCompatActivity implements android.support.v4.app.LoaderManager.LoaderCallbacks<Cursor> {
@@ -33,7 +29,6 @@ public class MainActivity extends AppCompatActivity implements android.support.v
      * Adapter for the ListView
      */
     ClothesCursorAdapter mCursorAdapter;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +59,6 @@ public class MainActivity extends AppCompatActivity implements android.support.v
         mCursorAdapter = new ClothesCursorAdapter(this, null);
         clothesListView.setAdapter(mCursorAdapter);
 
-
         clothesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
@@ -85,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements android.support.v
             }
         });
 
-        getLoaderManager().initLoader(CLOTHES_LOADER,null, this);
+        getSupportLoaderManager().initLoader(CLOTHES_LOADER, null, this);
     }
 
     @Override
@@ -114,28 +108,25 @@ public class MainActivity extends AppCompatActivity implements android.support.v
 
     private void insertProduct() {
 
-            ContentValues values = new ContentValues();
+        ContentValues values = new ContentValues();
 
-            values.put(ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME, "Skirt");
-            values.put(ClothesEntry.COLUMN_CLOTHES_PRICE, 258);
-            values.put(ClothesEntry.COLUMN_CLOTHES_QUANTITY, 2);
-            values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME, "H & M");
-            values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER, 03745455343);
+        values.put(ClothesEntry.COLUMN_CLOTHES_PRODUCT_NAME, "Skirt");
+        values.put(ClothesEntry.COLUMN_CLOTHES_PRICE, 258);
+        values.put(ClothesEntry.COLUMN_CLOTHES_QUANTITY, 2);
+        values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_NAME, "H & M");
+        values.put(ClothesEntry.COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER, 03745455343);
 
-            Uri newUri = getContentResolver().insert(ClothesEntry.CONTENT_URI, values);
+        Uri newUri = getContentResolver().insert(ClothesEntry.CONTENT_URI, values);
 
-        }
+    }
 
     /**
      * Helper method to delete all clothes in the database.
      */
-     private void deleteAllClothes(){
-         int rowsDeleted = getContentResolver().delete(ClothesEntry.CONTENT_URI, null, null);
-         Log.v("MainActivity", rowsDeleted + " rows deleted from clothes database");
-}
-
-
-
+    private void deleteAllClothes() {
+        int rowsDeleted = getContentResolver().delete(ClothesEntry.CONTENT_URI, null, null);
+        Log.v("MainActivity", rowsDeleted + " rows deleted from clothes database");
+    }
 
     @Override
     public android.support.v4.content.Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
@@ -147,26 +138,25 @@ public class MainActivity extends AppCompatActivity implements android.support.v
                 ClothesEntry.COLUMN_CLOTHES_QUANTITY,
         };
 
-        return  new android.support.v4.content.CursorLoader(this,
+        return new android.support.v4.content.CursorLoader(this,
                 ClothesEntry.CONTENT_URI,
                 projection,
                 null,
                 null,
                 null);
 
-
     }
 
     @Override
     public void onLoadFinished(android.support.v4.content.Loader<Cursor> loader, Cursor data) {
 
-         mCursorAdapter.swapCursor(data);
+        mCursorAdapter.swapCursor(data);
 
     }
 
     @Override
     public void onLoaderReset(android.support.v4.content.Loader<Cursor> loader) {
-         mCursorAdapter.swapCursor(null);
+        mCursorAdapter.swapCursor(null);
 
     }
 }

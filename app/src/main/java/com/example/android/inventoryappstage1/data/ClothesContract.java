@@ -6,7 +6,6 @@ import android.provider.BaseColumns;
 
 public class ClothesContract {
 
-
     private ClothesContract() {
     }
 
@@ -14,10 +13,8 @@ public class ClothesContract {
 
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
 
-
     // The uri can go 2 paths later. This path is for the whole table clothes
     public static final String PATH_CLOTHES = "clothes";
-
 
     public static class ClothesEntry implements BaseColumns {
         public static final String TABLE_NAME = "clothes";
@@ -28,10 +25,8 @@ public class ClothesContract {
         public static final String COLUMN_CLOTHES_SUPPLIER_NAME = "supplier_name";
         public static final String COLUMN_CLOTHES_SUPPLIER_PHONE_NUMBER = "supplier_phone_number";
 
-
         // this must be inside the PetEntry class Creates an Uri with BASE_CONTENT_URI, PATH_PETS.
         public static final Uri CONTENT_URI = Uri.withAppendedPath(BASE_CONTENT_URI, PATH_CLOTHES);
-
 
         /**
          * The MIME type of the {@link #CONTENT_URI} for a list of clothes.
